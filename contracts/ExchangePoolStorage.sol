@@ -4,13 +4,17 @@ pragma solidity 0.8.16;
 import {IExchangePool} from "./IExchangePool.sol";
 
 abstract contract ExchangePoolStorage is IExchangePool {
-    mapping (bytes => bool) _usedSignatures;
+    mapping (bytes => bool) internal _usedSignatures;
 
-    Exchange[] _exchanges;
+    Exchange[] internal _exchanges;
 
-    mapping (address => bool) _supportedIn;
+    mapping (address => bool) internal _supportedIn;
 
-    mapping (address => bool) _supportedOut;
+    mapping (address => bool) internal _supportedOut;
 
-    address _feeToken;
+    address internal _feeToken;
+
+    bytes32 constant public MANAGER_ROLE = keccak256("MANAGER_ROLE");
+
+    bytes32 constant public OWNER_ROLE = keccak256("OWNER_ROLE");
 } 

@@ -62,5 +62,9 @@ interface IExchangePool is IExchangePoolTypes {
     function getExchanges(uint256 id, uint256 limit) external returns (Exchange[] memory);
 
     // get number of exchanges
-    function getExchangesCount() external returns (uint256 result);
+    function exchangesCount() external returns (uint256 result);
+
+    function getBuyTokenStatus(address token) external returns (bool);
+
+    function getSellTokenStatus(address token) external returns (bool);
 }
