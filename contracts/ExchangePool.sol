@@ -64,18 +64,12 @@ contract ExchangePool is Initializable, AccessControlUpgradeable, SignatureCheck
             revert TokenNotSupported();
         }
         
-        bytes32 messageData = keccak256(abi.encode(tokenIn, tokenOut, fee, amountIn, amountOut, receiver));
+        bytes32 messageData = keccak256(abi.encode(tokenIn, tokenOut, fee, amountIn, amountOut, receiver, id));
         bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageData));
         
         if(recoverSigner(messageHash, sig) != signer) {
             revert UnverifiedSender();
         }
-
-        if (_usedSignatures[sig]) {
-            revert SignatureUsed();
-        }
-
-        _usedSignatures[sig] = true;
 
         _exchanges.push(
             Exchange({
@@ -89,7 +83,8 @@ contract ExchangePool is Initializable, AccessControlUpgradeable, SignatureCheck
                 status: ExchangeStatus.PENDING
             })
         );
-        swapId = _exchanges.length - 1;
+        swapId = id;
+        id++;
         emit SwapCreated(swapId);
         return swapId;
     }
@@ -113,7 +108,7 @@ contract ExchangePool is Initializable, AccessControlUpgradeable, SignatureCheck
         emit SwapDeclined(id);
     }
 
-    function finalizeSwap(uint256 id) external {
+    function finalizeSwap(uint256 id) onlyRole(MANAGER_ROLE) external {
         if (_exchanges.length < id) {
             revert ExchangeNotExist();
         }
@@ -149,20 +144,20 @@ contract ExchangePool is Initializable, AccessControlUpgradeable, SignatureCheck
         emit SwapFinalized(id);
     }
 
-    function changeFeeToken(address newFeeToken) external {
+    function changeFeeToken(address newFeeToken) onlyRole(OWNER_ROLE) external {
         _feeToken = newFeeToken;
         emit NewFeeToken(newFeeToken);
     }
 
-    function configureBuyToken(address tokenIn, bool status) external {
+    function configureBuyToken(address tokenIn, bool status) onlyRole(MANAGER_ROLE) external {
         _supportedIn[tokenIn] = status;
     }
 
-    function configureSellToken(address tokenOut, bool status) external {
+    function configureSellToken(address tokenOut, bool status) onlyRole(MANAGER_ROLE) external {
         _supportedOut[tokenOut] = status;
     }
 
-    function withdrawTokens(address token, uint256 amount, address receiver) external {
+    function withdrawTokens(address token, uint256 amount, address receiver) onlyRole(OWNER_ROLE) external {
         IERC20Upgradeable(token).safeTransferFrom(address(this), receiver, amount);
     }
 

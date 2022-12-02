@@ -40,7 +40,7 @@ interface IExchangePool is IExchangePoolTypes {
         address sender,
         address receiver,
         bytes memory sig
-    ) external returns (uint256 id);
+    ) external returns (uint256 swapId);
 
     // finalize the swap, receive and send the tokens
     function finalizeSwap(uint256 id) external;

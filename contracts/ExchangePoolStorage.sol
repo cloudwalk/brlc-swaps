@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 import {IExchangePool} from "./IExchangePool.sol";
 
 abstract contract ExchangePoolStorage is IExchangePool {
-    mapping (bytes => bool) internal _usedSignatures;
+    uint256 id;
 
     Exchange[] internal _exchanges;
 
