@@ -4,6 +4,7 @@ import { Contract, ContractFactory } from "ethers";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import exp from "constants";
 
 interface Swap {
   tokenIn: string;
@@ -31,6 +32,8 @@ describe("Contract 'ExchangePool'", () => {
   const TEST_FEE = 20;
   const TEST_AMOUNT_IN = 200;
   const TEST_AMOUNT_OUT = 100;
+
+  let lastId: number = 0;
 
   // contract events
   const EVENT_NAME_NEW_SWAP = "SwapCreated";
@@ -117,7 +120,8 @@ describe("Contract 'ExchangePool'", () => {
     fee: Number,
     amountIn: Number,
     amountOut: Number,
-    signer: SignerWithAddress
+    signer: SignerWithAddress,
+    id: Number
   ) {
     const swapData: (Number | String | SignerWithAddress)[] = [
       tokenIn,
@@ -128,7 +132,7 @@ describe("Contract 'ExchangePool'", () => {
       signer.address,
     ];
     const messageData = ethers.utils.defaultAbiCoder.encode(
-      ["address", "address", "uint", "uint", "uint", "address"],
+      ["address", "address", "uint", "uint", "uint", "address", "uint"],
       [
         swapData[0],
         swapData[1],
@@ -136,6 +140,7 @@ describe("Contract 'ExchangePool'", () => {
         swapData[3],
         swapData[4],
         swapData[5],
+        id
       ]
     );
     const messageHash = ethers.utils.keccak256(messageData);
@@ -213,7 +218,8 @@ describe("Contract 'ExchangePool'", () => {
         TEST_FEE,
         TEST_AMOUNT_IN,
         TEST_AMOUNT_OUT,
-        deployer
+        deployer,
+        lastId
       );
 
       await pool.createSwap(
@@ -224,7 +230,7 @@ describe("Contract 'ExchangePool'", () => {
         swapData[4],
         swapData[5],
         deployer.address,
-        signature
+        signature,
       );
 
       const exchange = await pool.getExchange(0);
@@ -251,7 +257,8 @@ describe("Contract 'ExchangePool'", () => {
         TEST_FEE,
         TEST_AMOUNT_IN,
         TEST_AMOUNT_OUT,
-        user
+        user,
+        lastId
       );
 
       const attackerWallet = await pool.connect(user);
@@ -265,7 +272,7 @@ describe("Contract 'ExchangePool'", () => {
           swapData[4],
           swapData[5],
           user.address,
-          signature
+          signature,
         )
       ).to.be.reverted;
     });
@@ -281,7 +288,8 @@ describe("Contract 'ExchangePool'", () => {
         TEST_FEE,
         TEST_AMOUNT_IN,
         TEST_AMOUNT_OUT,
-        manager
+        manager,
+        lastId
       );
 
       await expect(
@@ -293,50 +301,9 @@ describe("Contract 'ExchangePool'", () => {
           swapData[4],
           swapData[5],
           user.address,
-          signature
+          signature,
         )
       ).to.be.revertedWithCustomError(pool, REVERT_ERROR_IF_UNVERIFIED_SENDER);
-    });
-
-    it("Is reverted if signature is allready used", async () => {
-      const { pool, tokenMock1, tokenMock2 } = await setUpFixture(
-        deployAllContracts
-      );
-      const { signature, swapData } = await createSignature(
-        tokenMock1.address,
-        tokenMock2.address,
-        TEST_FEE,
-        TEST_AMOUNT_IN,
-        TEST_AMOUNT_OUT,
-        deployer
-      );
-
-      await pool.createSwap(
-        swapData[0],
-        swapData[1],
-        swapData[2],
-        swapData[3],
-        swapData[4],
-        swapData[5],
-        deployer.address,
-        signature
-      );
-
-      await expect(
-        pool.createSwap(
-          swapData[0],
-          swapData[1],
-          swapData[2],
-          swapData[3],
-          swapData[4],
-          swapData[5],
-          deployer.address,
-          signature
-        )
-      ).to.be.revertedWithCustomError(
-        pool,
-        REVERT_ERROR_IF_SINATURE_ALREADY_USED
-      );
     });
 
     it("Is reverted if token is unsupported", async () => {
@@ -349,7 +316,8 @@ describe("Contract 'ExchangePool'", () => {
         TEST_FEE,
         TEST_AMOUNT_IN,
         TEST_AMOUNT_OUT,
-        deployer
+        deployer,
+        lastId
       );
 
       await expect(
@@ -361,7 +329,7 @@ describe("Contract 'ExchangePool'", () => {
           swapData[4],
           swapData[5],
           deployer.address,
-          signature
+          signature,
         )
       ).to.be.revertedWithCustomError(pool, REVERT_ERROR_IF_UNSUPPORTED_TOKEN);
     });
@@ -378,7 +346,8 @@ describe("Contract 'ExchangePool'", () => {
         TEST_FEE,
         TEST_AMOUNT_IN,
         TEST_AMOUNT_OUT,
-        deployer
+        deployer,
+        lastId
       );
 
       await pool.createSwap(
@@ -389,7 +358,7 @@ describe("Contract 'ExchangePool'", () => {
         swapData[4],
         swapData[5],
         deployer.address,
-        signature
+        signature,
       );
 
       await pool.declineExchange(0);
@@ -407,7 +376,8 @@ describe("Contract 'ExchangePool'", () => {
         TEST_FEE,
         TEST_AMOUNT_IN,
         TEST_AMOUNT_OUT,
-        deployer
+        deployer,
+        lastId
       );
 
       await pool.createSwap(
@@ -418,7 +388,7 @@ describe("Contract 'ExchangePool'", () => {
         swapData[4],
         swapData[5],
         deployer.address,
-        signature
+        signature,
       );
 
       await expect(pool.connect(user).declineExchange(0)).to.be.reverted;
@@ -443,7 +413,8 @@ describe("Contract 'ExchangePool'", () => {
         TEST_FEE,
         TEST_AMOUNT_IN,
         TEST_AMOUNT_OUT,
-        deployer
+        deployer,
+        lastId
       );
 
       await pool.createSwap(
@@ -454,7 +425,7 @@ describe("Contract 'ExchangePool'", () => {
         swapData[4],
         swapData[5],
         deployer.address,
-        signature
+        signature,
       );
 
       await pool.declineExchange(0);
@@ -470,9 +441,18 @@ describe("Contract 'ExchangePool'", () => {
       const { pool, tokenMock1, tokenMock2, feeToken } = await setUpFixture(
         deployAllContracts
       );
-      await feeToken.increaseAllowance(pool.address, ethers.utils.parseEther("1"))
-      await tokenMock1.increaseAllowance(pool.address, ethers.utils.parseEther("1"))
-      await tokenMock2.increaseAllowance(pool.address, ethers.utils.parseEther("1"))
+      await feeToken.increaseAllowance(
+        pool.address,
+        ethers.utils.parseEther("1")
+      );
+      await tokenMock1.increaseAllowance(
+        pool.address,
+        ethers.utils.parseEther("1")
+      );
+      await tokenMock2.increaseAllowance(
+        pool.address,
+        ethers.utils.parseEther("1")
+      );
       await tokenMock2.transfer(pool.address, TEST_AMOUNT_IN);
       const { signature, swapData } = await createSignature(
         tokenMock1.address,
@@ -480,7 +460,8 @@ describe("Contract 'ExchangePool'", () => {
         TEST_FEE,
         TEST_AMOUNT_IN,
         TEST_AMOUNT_OUT,
-        deployer
+        deployer,
+        lastId
       );
 
       await pool.createSwap(
@@ -491,16 +472,246 @@ describe("Contract 'ExchangePool'", () => {
         swapData[4],
         swapData[5],
         deployer.address,
-        signature
+        signature,
       );
 
       await pool.finalizeSwap(0);
       await expect(await tokenMock1.balanceOf(pool.address)).to.eq(
         TEST_AMOUNT_IN
       );
-      await expect(await feeToken.balanceOf(pool.address)).to.eq(
-        TEST_FEE
+      await expect(await feeToken.balanceOf(pool.address)).to.eq(TEST_FEE);
+    });
+
+    it("Is reverted if exchange with selected id does not exist", async () => {
+      const { pool } = await setUpFixture(deployAllContracts);
+
+      await expect(pool.finalizeSwap(3)).to.be.revertedWithCustomError(
+        pool,
+        REVERT_ERROR_IF_EXCHANGE_NOT_EXIST
       );
+    });
+
+    it("Is reverted if caller is not a manager", async () => {
+      const { pool } = await setUpFixture(deployAllContracts);
+
+      const attackerWallet = await pool.connect(user);
+
+      await expect(attackerWallet.finalizeSwap(3)).to.be.reverted;
+    });
+
+    it("Is reverted if exchange is declined", async () => {
+      const { pool, tokenMock1, tokenMock2 } = await setUpFixture(
+        deployAllContracts
+      );
+      const { signature, swapData } = await createSignature(
+        tokenMock1.address,
+        tokenMock2.address,
+        TEST_FEE,
+        TEST_AMOUNT_IN,
+        TEST_AMOUNT_OUT,
+        deployer,
+        lastId
+      );
+
+      await pool.createSwap(
+        swapData[0],
+        swapData[1],
+        swapData[2],
+        swapData[3],
+        swapData[4],
+        swapData[5],
+        deployer.address,
+        signature,
+      );
+
+      await pool.declineExchange(0);
+
+      await expect(pool.finalizeSwap(0)).to.be.revertedWithCustomError(
+        pool,
+        REVERT_ERROR_IF_EXCHANGE_DECLINED
+      );
+    });
+
+    it("Is reverted if exchange is allready executed", async () => {
+      const { pool, tokenMock1, tokenMock2, feeToken } = await setUpFixture(
+        deployAllContracts
+      );
+      await feeToken.increaseAllowance(
+        pool.address,
+        ethers.utils.parseEther("1")
+      );
+      await tokenMock1.increaseAllowance(
+        pool.address,
+        ethers.utils.parseEther("1")
+      );
+      await tokenMock2.increaseAllowance(
+        pool.address,
+        ethers.utils.parseEther("1")
+      );
+      await tokenMock2.transfer(pool.address, TEST_AMOUNT_IN);
+      const { signature, swapData } = await createSignature(
+        tokenMock1.address,
+        tokenMock2.address,
+        TEST_FEE,
+        TEST_AMOUNT_IN,
+        TEST_AMOUNT_OUT,
+        deployer,
+        lastId
+      );
+
+      await pool.createSwap(
+        swapData[0],
+        swapData[1],
+        swapData[2],
+        swapData[3],
+        swapData[4],
+        swapData[5],
+        deployer.address,
+        signature,
+      );
+
+      await pool.finalizeSwap(0);
+
+      await expect(pool.finalizeSwap(0)).to.be.revertedWithCustomError(
+        pool,
+        REVERT_ERROR_IF_EXCHANGE_EXECUTED
+      );
+    });
+
+    it("Is reverted if one of ERC20 token transfers fails", async () => {
+      const { pool, tokenMock1, tokenMock2 } = await setUpFixture(
+        deployAllContracts
+      );
+      const { signature, swapData } = await createSignature(
+        tokenMock1.address,
+        tokenMock2.address,
+        TEST_FEE,
+        TEST_AMOUNT_IN,
+        TEST_AMOUNT_OUT,
+        deployer,
+        lastId
+      );
+
+      await pool.createSwap(
+        swapData[0],
+        swapData[1],
+        swapData[2],
+        swapData[3],
+        swapData[4],
+        swapData[5],
+        deployer.address,
+        signature,
+      );
+
+      await expect(pool.finalizeSwap(0)).to.be.reverted;
+    });
+
+    it("Is reverted if caller is not a manager", async () => {
+      const { pool, tokenMock1, tokenMock2 } = await setUpFixture(
+        deployAllContracts
+      );
+      const { signature, swapData } = await createSignature(
+        tokenMock1.address,
+        tokenMock2.address,
+        TEST_FEE,
+        TEST_AMOUNT_IN,
+        TEST_AMOUNT_OUT,
+        deployer,
+        lastId
+      );
+
+      await pool.createSwap(
+        swapData[0],
+        swapData[1],
+        swapData[2],
+        swapData[3],
+        swapData[4],
+        swapData[5],
+        deployer.address,
+        signature,
+      );
+
+      const attackerWallet = await pool.connect(user);
+      await expect(attackerWallet.finalizeSwap(0)).to.be.reverted;
+    });
+  });
+
+  describe("Getters", () => {
+    it("Gets an exchange by id", async () => {
+      const { pool, tokenMock1, tokenMock2 } = await setUpFixture(
+        deployAllContracts
+      );
+      const { signature, swapData } = await createSignature(
+        tokenMock1.address,
+        tokenMock2.address,
+        TEST_FEE,
+        TEST_AMOUNT_IN,
+        TEST_AMOUNT_OUT,
+        deployer,
+        lastId
+      );
+
+      await pool.createSwap(
+        swapData[0],
+        swapData[1],
+        swapData[2],
+        swapData[3],
+        swapData[4],
+        swapData[5],
+        deployer.address,
+        signature,
+      );
+
+      const exchange = await pool.getExchange(0);
+
+      // check that all the values were set correctly
+      expect(exchange[0]).to.eq(swapData[0]);
+      expect(exchange[1]).to.eq(swapData[1]);
+      expect(exchange[2]).to.eq(swapData[2]);
+      expect(exchange[3]).to.eq(swapData[3]);
+      expect(exchange[4]).to.eq(swapData[4]);
+      expect(exchange[5]).to.eq(deployer.address);
+      expect(exchange[6]).to.eq(deployer.address);
+      expect(exchange[7]).to.eq(PENDING);
+    });
+
+    it("Gets a page of exchanges", async () => {
+      const { pool, tokenMock1, tokenMock2 } = await setUpFixture(
+        deployAllContracts
+      );
+      const { signature, swapData } = await createSignature(
+        tokenMock1.address,
+        tokenMock2.address,
+        TEST_FEE,
+        TEST_AMOUNT_IN,
+        TEST_AMOUNT_OUT,
+        deployer,
+        lastId
+      );
+
+      await pool.createSwap(
+        swapData[0],
+        swapData[1],
+        swapData[2],
+        swapData[3],
+        swapData[4],
+        swapData[5],
+        deployer.address,
+        signature,
+      );
+
+      const exchanges = await pool.getExchanges(0, 1);
+      const exchange = exchanges[0]
+
+      // check that all the values were set correctly
+      expect(exchange[0]).to.eq(swapData[0]);
+      expect(exchange[1]).to.eq(swapData[1]);
+      expect(exchange[2]).to.eq(swapData[2]);
+      expect(exchange[3]).to.eq(swapData[3]);
+      expect(exchange[4]).to.eq(swapData[4]);
+      expect(exchange[5]).to.eq(deployer.address);
+      expect(exchange[6]).to.eq(deployer.address);
+      expect(exchange[7]).to.eq(PENDING);
     });
   });
 });
