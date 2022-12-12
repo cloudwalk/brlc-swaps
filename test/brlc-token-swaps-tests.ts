@@ -1,11 +1,8 @@
 import { ethers, network, upgrades } from "hardhat";
-import { expect, use } from "chai";
+import { expect } from "chai";
 import { Contract, ContractFactory } from "ethers";
-import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { SignatureChecker__factory } from "../typechain-types";
-import exp from "constants";
 
 interface ISwap {
   tokenIn: Contract;
