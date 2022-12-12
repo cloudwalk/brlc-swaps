@@ -4,6 +4,8 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract SignatureChecker {
+    error UnverifiedSender();
+
     function splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32) {
         require(sig.length == 65);
 
@@ -42,5 +44,23 @@ contract SignatureChecker {
         }
 
         return ecrecover(message, v, r, s);
+    }
+
+    function _verifySignature(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 amountOut,
+        address signer,
+        address receiver,
+        bytes calldata sig,
+        uint id
+    ) internal pure {
+        bytes32 messageData = keccak256(abi.encode(tokenIn, tokenOut, amountIn, amountOut, receiver, id));
+        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageData));
+
+        if (recoverSigner(messageHash, sig) != signer) {
+            revert UnverifiedSender();
+        }
     }
 }
