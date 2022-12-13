@@ -206,6 +206,15 @@ contract SwapPool is
                 status: SwapStatus.Pending
             })
         );
+
+        Swap memory selectedSwap = _swaps[id];
+        
+        //receive tokens that the contract bought
+        IERC20Upgradeable(selectedSwap.tokenIn).safeTransferFrom(
+            selectedSwap.sender,
+            address(this),
+            selectedSwap.amountIn
+        );
         emit SwapCreated(id);
         id++;
     }
@@ -227,13 +236,6 @@ contract SwapPool is
 
         selectedSwap.status = SwapStatus.Executed;
 
-        //transfer tokens
-        //receive tokens that the contract bought
-        IERC20Upgradeable(selectedSwap.tokenIn).safeTransferFrom(
-            selectedSwap.sender,
-            address(this),
-            selectedSwap.amountIn
-        );
         //send tokens that the contract sold
         IERC20Upgradeable(selectedSwap.tokenOut).safeTransfer(selectedSwap.receiver, selectedSwap.amountOut);
 

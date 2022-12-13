@@ -61,7 +61,6 @@ describe("Contract 'SwapPool'", () => {
     "0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775";
 
   let token1Factory: ContractFactory;
-  let token2Factory: ContractFactory;
   let swapPoolFactory: ContractFactory;
 
   let deployer: SignerWithAddress;
@@ -230,6 +229,9 @@ describe("Contract 'SwapPool'", () => {
         deployer.address,
         signature
       );
+
+      // check that contract received tokens
+      expect(await tokenMock1.balanceOf(pool.address)).to.eq(TEST_AMOUNT_IN);
 
       const createdSwap = await pool.getSwap(lastId);
 
