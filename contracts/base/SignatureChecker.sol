@@ -1,12 +1,10 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-
-contract SignatureChecker {
+abstract contract SignatureChecker {
     error UnverifiedSender();
 
-    function splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32) {
+    function _splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32) {
         require(sig.length == 65);
 
         bytes32 r;
@@ -24,7 +22,7 @@ contract SignatureChecker {
         return (v, r, s);
     }
 
-    function recoverSigner(bytes32 message, bytes memory sig) internal pure returns (address) {
+    function _recoverSigner(bytes32 message, bytes memory sig) internal pure returns (address) {
         if (sig.length != 65) {
             return (address(0));
         }
@@ -33,7 +31,7 @@ contract SignatureChecker {
         bytes32 r;
         bytes32 s;
 
-        (v, r, s) = splitSignature(sig);
+        (v, r, s) = _splitSignature(sig);
 
         if (v < 27) {
             v += 27;
@@ -59,7 +57,7 @@ contract SignatureChecker {
         bytes32 messageData = keccak256(abi.encode(tokenIn, tokenOut, amountIn, amountOut, receiver, id));
         bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageData));
 
-        if (recoverSigner(messageHash, sig) != signer) {
+        if (_recoverSigner(messageHash, sig) != signer) {
             revert UnverifiedSender();
         }
     }

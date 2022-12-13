@@ -11,6 +11,4 @@ abstract contract SwapPoolStorage is ISwapPool {
     mapping (address => bool) internal _supportedIn;
 
     mapping (address => bool) internal _supportedOut;
-
-    address internal _feeToken;
 } 

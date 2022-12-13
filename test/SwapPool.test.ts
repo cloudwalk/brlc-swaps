@@ -45,7 +45,7 @@ describe("Contract 'SwapPool'", () => {
   // contract custom errors
   const REVERT_ERROR_IF_UNSUPPORTED_TOKEN = "TokenNotSupported";
   const REVERT_ERROR_IF_ZERO_ADDRESS_SUPPORTED_TOKEN =
-    "ZeroAddressSupportedToken";
+    "ZeroTokenAddress";
   const REVERT_ERROR_IF_UNVERIFIED_SENDER = "UnverifiedSender";
   const REVERT_ERROR_IF_SWAP_DECLINED = "SwapAlreadyDeclined";
   const REVERT_ERROR_IF_SWAP_EXECUTED = "SwapAlreadyExecuted";
@@ -72,7 +72,6 @@ describe("Contract 'SwapPool'", () => {
   before(async () => {
     [deployer, manager, admin, user] = await ethers.getSigners();
     token1Factory = await ethers.getContractFactory("ERC20Mock");
-    token2Factory = await ethers.getContractFactory("ERC20Mock2");
     swapPoolFactory = await ethers.getContractFactory("SwapPool");
   });
 
@@ -82,7 +81,7 @@ describe("Contract 'SwapPool'", () => {
   }> {
     const tokenMock1 = await token1Factory.deploy();
     await tokenMock1.deployed();
-    const tokenMock2 = await token2Factory.deploy();
+    const tokenMock2 = await token1Factory.deploy();
     await tokenMock2.deployed();
     return {
       tokenMock1,
@@ -171,10 +170,10 @@ describe("Contract 'SwapPool'", () => {
       // check that deployer received ADMIN_ROLE
       expect(await pool.hasRole(ADMIN_ROLE_HASH, deployer.address)).to.eq(true);
       // check that buy and sell tokens are configured
-      expect(await pool.getBuyTokenStatus(tokenMock1.address)).to.eq(true);
-      expect(await pool.getBuyTokenStatus(tokenMock2.address)).to.eq(true);
-      expect(await pool.getSellTokenStatus(tokenMock1.address)).to.eq(true);
-      expect(await pool.getSellTokenStatus(tokenMock2.address)).to.eq(true);
+      expect(await pool.getTokenInSupporting(tokenMock1.address)).to.eq(true);
+      expect(await pool.getTokenInSupporting(tokenMock2.address)).to.eq(true);
+      expect(await pool.getTokenOutSupporting(tokenMock1.address)).to.eq(true);
+      expect(await pool.getTokenOutSupporting(tokenMock2.address)).to.eq(true);
     });
 
     it("Is reverted if contract is initialized", async () => {
@@ -338,7 +337,7 @@ describe("Contract 'SwapPool'", () => {
         deployAllContracts
       );
 
-      await pool.configureSellToken(tokenMock2.address, false);
+      await pool.configureTokenOut(tokenMock2.address, false);
 
       const { signature } = await createSignature(
         tokenMock1,
@@ -362,8 +361,8 @@ describe("Contract 'SwapPool'", () => {
         )
       ).to.be.revertedWithCustomError(pool, REVERT_ERROR_IF_UNSUPPORTED_TOKEN);
 
-      await pool.configureSellToken(tokenMock2.address, true);
-      await pool.configureBuyToken(tokenMock1.address, false);
+      await pool.configureTokenOut(tokenMock2.address, true);
+      await pool.configureTokenIn(tokenMock1.address, false);
 
       await expect(
         pool.createSwap(
@@ -750,20 +749,20 @@ describe("Contract 'SwapPool'", () => {
     });
   });
 
-  describe("function 'configureBuyToken()'", async () => {
+  describe("function 'configureTokenIn()'", async () => {
     it("Changes buy token status", async () => {
       const { pool, tokenMock1, tokenMock2 } = await setUpFixture(
         deployAllContracts
       );
 
-      expect(await pool.getBuyTokenStatus(tokenMock1.address)).to.eq(true);
-      expect(await pool.getBuyTokenStatus(tokenMock2.address)).to.eq(true);
+      expect(await pool.getTokenInSupporting(tokenMock1.address)).to.eq(true);
+      expect(await pool.getTokenInSupporting(tokenMock2.address)).to.eq(true);
 
-      await pool.configureBuyToken(tokenMock1.address, false);
-      await pool.configureBuyToken(tokenMock2.address, false);
+      await pool.configureTokenIn(tokenMock1.address, false);
+      await pool.configureTokenIn(tokenMock2.address, false);
 
-      expect(await pool.getBuyTokenStatus(tokenMock1.address)).to.eq(false);
-      expect(await pool.getBuyTokenStatus(tokenMock2.address)).to.eq(false);
+      expect(await pool.getTokenInSupporting(tokenMock1.address)).to.eq(false);
+      expect(await pool.getTokenInSupporting(tokenMock2.address)).to.eq(false);
     });
 
     it("Emits a 'BuyTokenConfigured()' event", async () => {
@@ -771,7 +770,7 @@ describe("Contract 'SwapPool'", () => {
         deployAllContracts
       );
 
-      expect(await pool.configureBuyToken(tokenMock1.address, false))
+      expect(await pool.configureTokenIn(tokenMock1.address, false))
         .to.emit(pool, EVENT_NAME_BUY_TOKEN_CONFIG)
         .withArgs(tokenMock1.address, false);
     });
@@ -780,7 +779,7 @@ describe("Contract 'SwapPool'", () => {
       const { pool } = await setUpFixture(deployAllContracts);
 
       await expect(
-        pool.configureBuyToken(ZERO_ADDRESS, true)
+        pool.configureTokenIn(ZERO_ADDRESS, true)
       ).to.be.revertedWithCustomError(
         pool,
         REVERT_ERROR_IF_ZERO_ADDRESS_SUPPORTED_TOKEN
@@ -791,25 +790,25 @@ describe("Contract 'SwapPool'", () => {
       const { pool, tokenMock1 } = await setUpFixture(deployAllContracts);
 
       await expect(
-        pool.connect(user).configureBuyToken(tokenMock1.address, false)
+        pool.connect(user).configureTokenIn(tokenMock1.address, false)
       ).to.be.reverted;
     });
   });
 
-  describe("function 'configureSellToken()'", async () => {
+  describe("function 'configureTokenOut()'", async () => {
     it("Changes sell token status", async () => {
       const { pool, tokenMock1, tokenMock2 } = await setUpFixture(
         deployAllContracts
       );
 
-      expect(await pool.getSellTokenStatus(tokenMock1.address)).to.eq(true);
-      expect(await pool.getSellTokenStatus(tokenMock2.address)).to.eq(true);
+      expect(await pool.getTokenOutSupporting(tokenMock1.address)).to.eq(true);
+      expect(await pool.getTokenOutSupporting(tokenMock2.address)).to.eq(true);
 
-      await pool.configureSellToken(tokenMock1.address, false);
-      await pool.configureSellToken(tokenMock2.address, false);
+      await pool.configureTokenOut(tokenMock1.address, false);
+      await pool.configureTokenOut(tokenMock2.address, false);
 
-      expect(await pool.getSellTokenStatus(tokenMock1.address)).to.eq(false);
-      expect(await pool.getSellTokenStatus(tokenMock2.address)).to.eq(false);
+      expect(await pool.getTokenOutSupporting(tokenMock1.address)).to.eq(false);
+      expect(await pool.getTokenOutSupporting(tokenMock2.address)).to.eq(false);
     });
 
     it("Emits a 'SellTokenConfigured()' event", async () => {
@@ -817,7 +816,7 @@ describe("Contract 'SwapPool'", () => {
         deployAllContracts
       );
 
-      expect(await pool.configureBuyToken(tokenMock1.address, false))
+      expect(await pool.configureTokenOut(tokenMock1.address, false))
         .to.emit(pool, EVENT_NAME_SELL_TOKEN_CONFIG)
         .withArgs(tokenMock1.address, false);
     });
@@ -826,7 +825,7 @@ describe("Contract 'SwapPool'", () => {
       const { pool } = await setUpFixture(deployAllContracts);
 
       await expect(
-        pool.configureSellToken(ZERO_ADDRESS, true)
+        pool.configureTokenOut(ZERO_ADDRESS, true)
       ).to.be.revertedWithCustomError(
         pool,
         REVERT_ERROR_IF_ZERO_ADDRESS_SUPPORTED_TOKEN
@@ -837,7 +836,7 @@ describe("Contract 'SwapPool'", () => {
       const { pool, tokenMock1 } = await setUpFixture(deployAllContracts);
 
       await expect(
-        pool.connect(user).configureSellToken(tokenMock1.address, false)
+        pool.connect(user).configureTokenOut(tokenMock1.address, false)
       ).to.be.reverted;
     });
   });
@@ -1004,16 +1003,16 @@ describe("Contract 'SwapPool'", () => {
       expect(await pool.swapsCount()).to.eq(10);
     });
 
-    it("function 'getBuyTokenStatus()'", async () => {
+    it("function 'getTokenInSupporting()'", async () => {
       const { pool, tokenMock1 } = await setUpFixture(deployAllContracts);
 
-      expect(await pool.getBuyTokenStatus(tokenMock1.address)).to.eq(true);
+      expect(await pool.getTokenInSupporting(tokenMock1.address)).to.eq(true);
     });
 
-    it("function 'getSellTokenStatus()'", async () => {
+    it("function 'getTokenOutSupporting()'", async () => {
       const { pool, tokenMock1 } = await setUpFixture(deployAllContracts);
 
-      expect(await pool.getSellTokenStatus(tokenMock1.address)).to.eq(true);
+      expect(await pool.getTokenOutSupporting(tokenMock1.address)).to.eq(true);
     });
   });
 });

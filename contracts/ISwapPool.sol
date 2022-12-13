@@ -49,9 +49,9 @@ interface ISwapPool is ISwapPoolTypes {
     // decline swap
     function declineSwap(uint256 id) external;
 
-    function configureBuyToken(address newTokenIn, bool status) external;
+    function configureTokenIn(address token, bool supported) external;
 
-    function configureSellToken(address newTokenOut, bool status) external;
+    function configureTokenOut(address token, bool supported) external;
 
     // get swap by id
     function getSwap(uint256 id) external returns (Swap memory);
@@ -62,7 +62,7 @@ interface ISwapPool is ISwapPoolTypes {
     // get number of swaps
     function swapsCount() external returns (uint256 result);
 
-    function getBuyTokenStatus(address token) external returns (bool);
+    function getTokenInSupporting(address token) external returns (bool);
 
-    function getSellTokenStatus(address token) external returns (bool);
+    function getTokenOutSupporting(address token) external returns (bool);
 }

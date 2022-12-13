@@ -6,10 +6,11 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { IERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import { SafeERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
-import { SignatureChecker } from "./utils/SignatureChecker.sol";
-import { BlacklistControlUpgradeable } from "./utils/BlacklistControlUpgradeable.sol";
-import { PauseControlUpgradeable } from "./utils/PauseControlUpgradeable.sol";
-import { RescueControlUpgradeable } from "./utils/RescueControlUpgradeable.sol";
+import { SignatureChecker } from "./base/SignatureChecker.sol";
+import { BlacklistControlUpgradeable } from "./base/BlacklistControlUpgradeable.sol";
+import { PauseControlUpgradeable } from "./base/PauseControlUpgradeable.sol";
+import { RescueControlUpgradeable } from "./base/RescueControlUpgradeable.sol";
+import { StoragePlaceholder200 } from "./base/StoragePlaceholder.sol";
 import { SwapPoolStorage } from "./SwapPoolStorage.sol";
 import { ISwapPool } from "./ISwapPool.sol";
 
@@ -20,6 +21,7 @@ contract SwapPool is
     PauseControlUpgradeable,
     RescueControlUpgradeable,
     SignatureChecker,
+    StoragePlaceholder200,
     SwapPoolStorage
 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
@@ -36,46 +38,44 @@ contract SwapPool is
 
     error SwapAlreadyExecuted();
 
-    error SignatureUsed();
-
     error SwapNotExist();
 
-    error ZeroAddressSupportedToken();
+    error ZeroTokenAddress();
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address[] memory buyTokens, address[] memory sellTokens) public initializer {
-        __SwapPool_init(buyTokens, sellTokens);
+    function initialize(address[] memory inTokens, address[] memory outTokens) public initializer {
+        __SwapPool_init(inTokens, outTokens);
     }
 
-    function __SwapPool_init(address[] memory buyTokens, address[] memory sellTokens) internal {
+    function __SwapPool_init(address[] memory inTokens, address[] memory outTokens) internal {
         __AccessControl_init_unchained();
-        __SwapPool_init_unchained(buyTokens, sellTokens);
+        __SwapPool_init_unchained(inTokens, outTokens);
         __PauseControl_init_unchained(OWNER_ROLE);
         __RescueControl_init_unchained(OWNER_ROLE);
         __BlacklistControl_init_unchained(OWNER_ROLE);
     }
 
-    function __SwapPool_init_unchained(address[] memory buyTokens, address[] memory sellTokens) internal {
+    function __SwapPool_init_unchained(address[] memory inTokens, address[] memory outTokens) internal {
         _grantRole(OWNER_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
         _grantRole(MANAGER_ROLE, msg.sender);
 
-        for (uint256 i = 0; i < buyTokens.length; i++) {
-            if (buyTokens[i] == address(0)) {
-                revert ZeroAddressSupportedToken();
+        for (uint256 i = 0; i < inTokens.length; i++) {
+            if (inTokens[i] == address(0)) {
+                revert ZeroTokenAddress();
             }
-            _supportedIn[buyTokens[i]] = true;
+            _supportedIn[inTokens[i]] = true;
         }
 
-        for (uint256 i = 0; i < sellTokens.length; i++) {
-            if (sellTokens[i] == address(0)) {
-                revert ZeroAddressSupportedToken();
+        for (uint256 i = 0; i < outTokens.length; i++) {
+            if (outTokens[i] == address(0)) {
+                revert ZeroTokenAddress();
             }
-            _supportedOut[buyTokens[i]] = true;
+            _supportedOut[outTokens[i]] = true;
         }
     }
 
@@ -129,20 +129,20 @@ contract SwapPool is
         _finalizeSwap(id);
     }
 
-    function configureBuyToken(address tokenIn, bool status) external onlyRole(MANAGER_ROLE) {
-        if (tokenIn == address(0)) {
-            revert ZeroAddressSupportedToken();
+    function configureTokenIn(address token, bool supported) external onlyRole(MANAGER_ROLE) {
+        if (token == address(0)) {
+            revert ZeroTokenAddress();
         }
-        _supportedIn[tokenIn] = status;
-        emit BuyTokenConfigured(tokenIn, status);
+        _supportedIn[token] = supported;
+        emit BuyTokenConfigured(token, supported);
     }
 
-    function configureSellToken(address tokenOut, bool status) external onlyRole(MANAGER_ROLE) {
-        if (tokenOut == address(0)) {
-            revert ZeroAddressSupportedToken();
+    function configureTokenOut(address token, bool supported) external onlyRole(MANAGER_ROLE) {
+        if (token == address(0)) {
+            revert ZeroTokenAddress();
         }
-        _supportedOut[tokenOut] = status;
-        emit SellTokenConfigured(tokenOut, status);
+        _supportedOut[token] = supported;
+        emit SellTokenConfigured(token, supported);
     }
 
     function withdrawTokens(address token, uint256 amount, address receiver) external onlyRole(ADMIN_ROLE) {
@@ -175,11 +175,11 @@ contract SwapPool is
         return _swaps.length;
     }
 
-    function getBuyTokenStatus(address token) external view returns (bool) {
+    function getTokenInSupporting(address token) external view returns (bool) {
         return _supportedIn[token];
     }
 
-    function getSellTokenStatus(address token) external view returns (bool) {
+    function getTokenOutSupporting(address token) external view returns (bool) {
         return _supportedOut[token];
     }
 
