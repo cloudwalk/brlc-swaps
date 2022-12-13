@@ -102,8 +102,8 @@ contract SwapPool is
         bytes calldata sig
     ) external onlyRole(MANAGER_ROLE) notBlacklisted(signer) notBlacklisted(receiver) whenNotPaused {
         _verifySignature(tokenIn, tokenOut, amountIn, amountOut, signer, receiver, sig, id);
-        _createSwap(tokenIn, tokenOut, amountIn, amountOut, signer, receiver);
-        _finalizeSwap(id - 1);
+        uint256 newSwapId = _createSwap(tokenIn, tokenOut, amountIn, amountOut, signer, receiver);
+        _finalizeSwap(newSwapId);
     }
 
     function declineSwap(uint256 id) external onlyRole(MANAGER_ROLE) whenNotPaused {
@@ -132,20 +132,20 @@ contract SwapPool is
         _finalizeSwap(id);
     }
 
-    function configureTokenIn(address token, bool supported) external onlyRole(MANAGER_ROLE) {
+    function configureTokenIn(address token, bool supported) external onlyRole(ADMIN_ROLE) {
         if (token == address(0)) {
             revert ZeroTokenAddress();
         }
         _supportedIn[token] = supported;
-        emit BuyTokenConfigured(token, supported);
+        emit TokenInConfigured(token, supported);
     }
 
-    function configureTokenOut(address token, bool supported) external onlyRole(MANAGER_ROLE) {
+    function configureTokenOut(address token, bool supported) external onlyRole(ADMIN_ROLE) {
         if (token == address(0)) {
             revert ZeroTokenAddress();
         }
         _supportedOut[token] = supported;
-        emit SellTokenConfigured(token, supported);
+        emit TokenOutConfigured(token, supported);
     }
 
     function withdrawTokens(address token, uint256 amount, address receiver) external onlyRole(ADMIN_ROLE) {
@@ -193,7 +193,7 @@ contract SwapPool is
         uint256 amountOut,
         address signer,
         address receiver
-    ) internal {
+    ) internal returns (uint256) {
         if (!_supportedIn[tokenIn] || !_supportedOut[tokenOut]) {
             revert TokenNotSupported();
         }
@@ -220,6 +220,7 @@ contract SwapPool is
         );
         emit SwapCreated(id);
         id++;
+        return id - 1;
     }
 
     function _finalizeSwap(uint256 id) internal {

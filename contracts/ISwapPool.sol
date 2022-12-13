@@ -28,9 +28,9 @@ interface ISwapPool is ISwapPoolTypes {
 
     event TokensWithdrawal(address receiver, address token, uint amount);
 
-    event BuyTokenConfigured(address token, bool status);
+    event TokenInConfigured(address token, bool status);
 
-    event SellTokenConfigured(address token, bool status);
+    event TokenOutConfigured(address token, bool status);
 
     // create a swap and add to pending
     function createSwap(

@@ -33,6 +33,10 @@ abstract contract SignatureChecker {
 
         (v, r, s) = _splitSignature(sig);
 
+        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+            return (address(0));
+        }
+
         if (v < 27) {
             v += 27;
         }

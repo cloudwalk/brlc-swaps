@@ -39,8 +39,8 @@ describe("Contract 'SwapPool'", () => {
   const EVENT_NAME_SWAP_FINALIZED = "SwapFinalized";
   const EVENT_NAME_SWAP_DECLINED = "SwapDeclined";
   const EVENT_NAME_TOKENS_WITHDRAW = "TokensWithdrawal";
-  const EVENT_NAME_BUY_TOKEN_CONFIG = "BuyTokenConfigured";
-  const EVENT_NAME_SELL_TOKEN_CONFIG = "SellTokenConfigured";
+  const EVENT_NAME_BUY_TOKEN_CONFIG = "TokenInConfigured";
+  const EVENT_NAME_SELL_TOKEN_CONFIG = "TokenOutConfigured";
 
   // contract custom errors
   const REVERT_ERROR_IF_UNSUPPORTED_TOKEN = "TokenNotSupported";
@@ -767,7 +767,7 @@ describe("Contract 'SwapPool'", () => {
       expect(await pool.getTokenInSupporting(tokenMock2.address)).to.eq(false);
     });
 
-    it("Emits a 'BuyTokenConfigured()' event", async () => {
+    it("Emits a 'TokenInConfigured()' event", async () => {
       const { pool, tokenMock1 } = await setUpFixture(
         deployAllContracts
       );
@@ -813,7 +813,7 @@ describe("Contract 'SwapPool'", () => {
       expect(await pool.getTokenOutSupporting(tokenMock2.address)).to.eq(false);
     });
 
-    it("Emits a 'SellTokenConfigured()' event", async () => {
+    it("Emits a 'TokenOutConfigured()' event", async () => {
       const { pool, tokenMock1 } = await setUpFixture(
         deployAllContracts
       );
