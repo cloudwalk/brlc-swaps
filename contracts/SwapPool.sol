@@ -122,6 +122,9 @@ contract SwapPool is
         }
 
         selectedSwap.status = SwapStatus.Declined;
+
+        // return tokens
+        IERC20Upgradeable(selectedSwap.tokenIn).safeTransfer(selectedSwap.sender, selectedSwap.amountIn);
         emit SwapDeclined(id);
     }
 
@@ -208,7 +211,7 @@ contract SwapPool is
         );
 
         Swap memory selectedSwap = _swaps[id];
-        
+
         //receive tokens that the contract bought
         IERC20Upgradeable(selectedSwap.tokenIn).safeTransferFrom(
             selectedSwap.sender,
