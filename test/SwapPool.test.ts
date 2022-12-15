@@ -44,8 +44,7 @@ describe("Contract 'SwapPool'", () => {
 
   // contract custom errors
   const REVERT_ERROR_IF_UNSUPPORTED_TOKEN = "TokenNotSupported";
-  const REVERT_ERROR_IF_ZERO_ADDRESS_SUPPORTED_TOKEN =
-    "ZeroTokenAddress";
+  const REVERT_ERROR_IF_ZERO_ADDRESS_SUPPORTED_TOKEN = "ZeroTokenAddress";
   const REVERT_ERROR_IF_UNVERIFIED_SENDER = "UnverifiedSender";
   const REVERT_ERROR_IF_SWAP_DECLINED = "SwapAlreadyDeclined";
   const REVERT_ERROR_IF_SWAP_EXECUTED = "SwapAlreadyExecuted";
@@ -94,10 +93,7 @@ describe("Contract 'SwapPool'", () => {
     tokenMock2: Contract;
   }> {
     const { tokenMock1, tokenMock2 } = await deployMocks();
-    const pool = await upgrades.deployProxy(swapPoolFactory, [
-      [tokenMock1.address, tokenMock2.address],
-      [tokenMock1.address, tokenMock2.address],
-    ]);
+    const pool = await upgrades.deployProxy(swapPoolFactory, []);
     await pool.deployed();
 
     await tokenMock1.increaseAllowance(
@@ -108,6 +104,12 @@ describe("Contract 'SwapPool'", () => {
       pool.address,
       ethers.utils.parseEther("1")
     );
+
+    await pool.grantRole(MANAGER_ROLE_HASH, deployer.address);
+    await pool.grantRole(ADMIN_ROLE_HASH, deployer.address);
+
+    await pool.configureTokenIn(tokenMock1.address, true);
+    await pool.configureTokenOut(tokenMock2.address, true);
 
     return {
       pool,
@@ -157,49 +159,16 @@ describe("Contract 'SwapPool'", () => {
 
   describe("function 'initialize()'", () => {
     it("Configures a contract as expected", async () => {
-      const { pool, tokenMock1, tokenMock2 } = await setUpFixture(
-        deployAllContracts
-      );
+      const { pool } = await setUpFixture(deployAllContracts);
       // check that deployer received the OWNER_ROLE
       expect(await pool.hasRole(OWNER_ROLE_HASH, deployer.address)).to.eq(true);
-      // check that deployer received the MANAGER_ROLE
-      expect(await pool.hasRole(MANAGER_ROLE_HASH, deployer.address)).to.eq(
-        true
-      );
-      // check that deployer received ADMIN_ROLE
-      expect(await pool.hasRole(ADMIN_ROLE_HASH, deployer.address)).to.eq(true);
-      // check that buy and sell tokens are configured
-      expect(await pool.getTokenInSupporting(tokenMock1.address)).to.eq(true);
-      expect(await pool.getTokenInSupporting(tokenMock2.address)).to.eq(true);
-      expect(await pool.getTokenOutSupporting(tokenMock1.address)).to.eq(true);
-      expect(await pool.getTokenOutSupporting(tokenMock2.address)).to.eq(true);
     });
 
     it("Is reverted if contract is initialized", async () => {
       const { pool } = await setUpFixture(deployAllContracts);
       // check that contract will revert second initialization
-      await expect(pool.initialize([], [])).to.be.revertedWith(
+      await expect(pool.initialize()).to.be.revertedWith(
         REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED
-      );
-    });
-
-    it("Is reverted if zero address passed as a supported token", async () => {
-      const { pool } = await setUpFixture(deployAllContracts);
-
-      // check that initialization is reverted if zero address in first array
-      await expect(
-        upgrades.deployProxy(swapPoolFactory, [[ZERO_ADDRESS], []])
-      ).to.be.revertedWithCustomError(
-        pool,
-        REVERT_ERROR_IF_ZERO_ADDRESS_SUPPORTED_TOKEN
-      );
-
-      // check that initialization is reverted if zero address in second array
-      await expect(
-        upgrades.deployProxy(swapPoolFactory, [[], [ZERO_ADDRESS]])
-      ).to.be.revertedWithCustomError(
-        pool,
-        REVERT_ERROR_IF_ZERO_ADDRESS_SUPPORTED_TOKEN
       );
     });
   });
@@ -339,10 +308,8 @@ describe("Contract 'SwapPool'", () => {
         deployAllContracts
       );
 
-      await pool.configureTokenOut(tokenMock2.address, false);
-
       const { signature } = await createSignature(
-        tokenMock1,
+        tokenMock2,
         tokenMock2,
         TEST_AMOUNT_IN,
         TEST_AMOUNT_OUT,
@@ -353,22 +320,7 @@ describe("Contract 'SwapPool'", () => {
 
       await expect(
         pool.createSwap(
-          tokenMock1.address,
           tokenMock2.address,
-          TEST_AMOUNT_IN,
-          TEST_AMOUNT_OUT,
-          deployer.address,
-          deployer.address,
-          signature
-        )
-      ).to.be.revertedWithCustomError(pool, REVERT_ERROR_IF_UNSUPPORTED_TOKEN);
-
-      await pool.configureTokenOut(tokenMock2.address, true);
-      await pool.configureTokenIn(tokenMock1.address, false);
-
-      await expect(
-        pool.createSwap(
-          tokenMock1.address,
           tokenMock2.address,
           TEST_AMOUNT_IN,
           TEST_AMOUNT_OUT,
@@ -757,24 +709,22 @@ describe("Contract 'SwapPool'", () => {
         deployAllContracts
       );
 
-      expect(await pool.getTokenInSupporting(tokenMock1.address)).to.eq(true);
-      expect(await pool.getTokenInSupporting(tokenMock2.address)).to.eq(true);
+      expect(await pool.isTokenInSupported(tokenMock1.address)).to.eq(true);
+      expect(await pool.isTokenInSupported(tokenMock2.address)).to.eq(false);
 
       await pool.configureTokenIn(tokenMock1.address, false);
-      await pool.configureTokenIn(tokenMock2.address, false);
+      await pool.configureTokenIn(tokenMock2.address, true);
 
-      expect(await pool.getTokenInSupporting(tokenMock1.address)).to.eq(false);
-      expect(await pool.getTokenInSupporting(tokenMock2.address)).to.eq(false);
+      expect(await pool.isTokenInSupported(tokenMock1.address)).to.eq(false);
+      expect(await pool.isTokenInSupported(tokenMock2.address)).to.eq(true);
     });
 
     it("Emits a 'TokenInConfigured()' event", async () => {
-      const { pool, tokenMock1 } = await setUpFixture(
-        deployAllContracts
-      );
+      const { pool, tokenMock2 } = await setUpFixture(deployAllContracts);
 
-      expect(await pool.configureTokenIn(tokenMock1.address, false))
+      expect(await pool.configureTokenIn(tokenMock2.address, true))
         .to.emit(pool, EVENT_NAME_BUY_TOKEN_CONFIG)
-        .withArgs(tokenMock1.address, false);
+        .withArgs(tokenMock2.address, true);
     });
 
     it("Is reverted if zero address is passed as an argument", async () => {
@@ -803,24 +753,22 @@ describe("Contract 'SwapPool'", () => {
         deployAllContracts
       );
 
-      expect(await pool.getTokenOutSupporting(tokenMock1.address)).to.eq(true);
-      expect(await pool.getTokenOutSupporting(tokenMock2.address)).to.eq(true);
+      expect(await pool.isTokenOutSupported(tokenMock1.address)).to.eq(false);
+      expect(await pool.isTokenOutSupported(tokenMock2.address)).to.eq(true);
 
-      await pool.configureTokenOut(tokenMock1.address, false);
+      await pool.configureTokenOut(tokenMock1.address, true);
       await pool.configureTokenOut(tokenMock2.address, false);
 
-      expect(await pool.getTokenOutSupporting(tokenMock1.address)).to.eq(false);
-      expect(await pool.getTokenOutSupporting(tokenMock2.address)).to.eq(false);
+      expect(await pool.isTokenOutSupported(tokenMock1.address)).to.eq(true);
+      expect(await pool.isTokenOutSupported(tokenMock2.address)).to.eq(false);
     });
 
     it("Emits a 'TokenOutConfigured()' event", async () => {
-      const { pool, tokenMock1 } = await setUpFixture(
-        deployAllContracts
-      );
+      const { pool, tokenMock1 } = await setUpFixture(deployAllContracts);
 
-      expect(await pool.configureTokenOut(tokenMock1.address, false))
+      expect(await pool.configureTokenOut(tokenMock1.address, true))
         .to.emit(pool, EVENT_NAME_SELL_TOKEN_CONFIG)
-        .withArgs(tokenMock1.address, false);
+        .withArgs(tokenMock1.address, true);
     });
 
     it("Is reverted if zero address is passed as an argument", async () => {
@@ -1005,16 +953,16 @@ describe("Contract 'SwapPool'", () => {
       expect(await pool.swapsCount()).to.eq(10);
     });
 
-    it("function 'getTokenInSupporting()'", async () => {
+    it("function 'isTokenInSupported()'", async () => {
       const { pool, tokenMock1 } = await setUpFixture(deployAllContracts);
 
-      expect(await pool.getTokenInSupporting(tokenMock1.address)).to.eq(true);
+      expect(await pool.isTokenInSupported(tokenMock1.address)).to.eq(true);
     });
 
-    it("function 'getTokenOutSupporting()'", async () => {
-      const { pool, tokenMock1 } = await setUpFixture(deployAllContracts);
+    it("function 'isTokeOutSupported()'", async () => {
+      const { pool, tokenMock2 } = await setUpFixture(deployAllContracts);
 
-      expect(await pool.getTokenOutSupporting(tokenMock1.address)).to.eq(true);
+      expect(await pool.isTokenOutSupported(tokenMock2.address)).to.eq(true);
     });
   });
 });
