@@ -47,22 +47,4 @@ abstract contract SignatureChecker {
 
         return ecrecover(message, v, r, s);
     }
-
-    function _verifySignature(
-        address tokenIn,
-        address tokenOut,
-        uint256 amountIn,
-        uint256 amountOut,
-        address signer,
-        address receiver,
-        bytes calldata sig,
-        uint id
-    ) internal pure {
-        bytes32 messageData = keccak256(abi.encode(tokenIn, tokenOut, amountIn, amountOut, receiver, id));
-        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageData));
-
-        if (_recoverSigner(messageHash, sig) != signer) {
-            revert UnverifiedSender();
-        }
-    }
 }
