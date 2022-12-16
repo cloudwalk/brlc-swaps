@@ -9,7 +9,7 @@ interface ISwapPoolTypes {
     /// @dev enum for describing current status of a swap
     enum SwapStatus {
         Pending,
-        Executed,
+        Finalized,
         Declined
     }
 

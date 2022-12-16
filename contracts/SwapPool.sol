@@ -43,8 +43,8 @@ contract SwapPool is
     /// @dev Swap with selected id is already declined.
     error SwapAlreadyDeclined();
 
-    /// @dev Swap with selected id is already executed.
-    error SwapAlreadyExecuted();
+    /// @dev Swap with selected id is already finalized.
+    error SwapAlreadyFinalized();
 
     /// @dev Swap with selected id does not exist.
     error SwapNotExist();
@@ -52,12 +52,8 @@ contract SwapPool is
     /// @dev Zero address was passed as a parameter.
     error ZeroTokenAddress();
 
-    /**
-     * Selected token already has passed status.
-     * @param token The token to be configured.
-     * @param supported The status of a token.
-     */
-    error TokenAlreadyConfigured(address token, bool supported);
+    /// @dev Selected token already has passed status.
+    error TokenAlreadyConfigured();
 
     /**
      * @dev Constructor that prohibits the initialization of the implementation of the upgradable contract.
@@ -164,7 +160,7 @@ contract SwapPool is
      * - The caller must have MANAGER_ROLE.
      * - The contract should not be paused.
      * - The swap with selected id should exist.
-     * - The swap with selected id should not be executed.
+     * - The swap with selected id should not be finalized.
      * - The swap with selected id should not be declined.
      */
     function declineSwap(uint256 id) external onlyRole(MANAGER_ROLE) whenNotPaused {
@@ -178,8 +174,8 @@ contract SwapPool is
             revert SwapAlreadyDeclined();
         }
 
-        if (selectedSwap.status == SwapStatus.Executed) {
-            revert SwapAlreadyExecuted();
+        if (selectedSwap.status == SwapStatus.Finalized) {
+            revert SwapAlreadyFinalized();
         }
 
         selectedSwap.status = SwapStatus.Declined;
@@ -196,7 +192,7 @@ contract SwapPool is
      * - The caller must have MANAGER_ROLE.
      * - The contract should not be paused.
      * - The swap with selected id should exist.
-     * - The swap with selected id should not be executed.
+     * - The swap with selected id should not be finalized.
      * - The swap with selected id should not be declined.
      */
     function finalizeSwap(uint256 id) external onlyRole(MANAGER_ROLE) whenNotPaused {
@@ -212,12 +208,12 @@ contract SwapPool is
      * - The selected token should not be zero address.
      * - The selected token should not already have {status}.
      */
-    function configureTokenIn(address token, bool supported) external onlyRole(ADMIN_ROLE) {
+    function configureTokenIn(address token, bool supported) external onlyRole(ADMIN_ROLE) whenNotPaused {
         if (token == address(0)) {
             revert ZeroTokenAddress();
         }
         if (_supportedIn[token] == supported) {
-            revert TokenAlreadyConfigured(token, supported);
+            revert TokenAlreadyConfigured();
         }
         _supportedIn[token] = supported;
         emit TokenInConfigured(token, supported);
@@ -232,12 +228,12 @@ contract SwapPool is
      * - The selected token should not be zero address.
      * - The selected token should not already have {status}.
      */
-    function configureTokenOut(address token, bool supported) external onlyRole(ADMIN_ROLE) {
+    function configureTokenOut(address token, bool supported) external onlyRole(ADMIN_ROLE) whenNotPaused {
         if (token == address(0)) {
             revert ZeroTokenAddress();
         }
         if (_supportedOut[token] == supported) {
-            revert TokenAlreadyConfigured(token, supported);
+            revert TokenAlreadyConfigured();
         }
         _supportedOut[token] = supported;
         emit TokenOutConfigured(token, supported);
@@ -250,7 +246,11 @@ contract SwapPool is
      *
      * - The caller must have the ADMIN_ROLE
      */
-    function withdrawTokens(address token, uint256 amount, address receiver) external onlyRole(ADMIN_ROLE) {
+    function withdrawTokens(
+        address token,
+        uint256 amount,
+        address receiver
+    ) external onlyRole(ADMIN_ROLE) whenNotPaused {
         IERC20Upgradeable(token).safeTransfer(receiver, amount);
         emit TokensWithdrawal(receiver, token, amount);
     }
@@ -352,11 +352,11 @@ contract SwapPool is
             revert SwapAlreadyDeclined();
         }
 
-        if (selectedSwap.status == SwapStatus.Executed) {
-            revert SwapAlreadyExecuted();
+        if (selectedSwap.status == SwapStatus.Finalized) {
+            revert SwapAlreadyFinalized();
         }
 
-        selectedSwap.status = SwapStatus.Executed;
+        selectedSwap.status = SwapStatus.Finalized;
 
         IERC20Upgradeable(selectedSwap.tokenOut).safeTransfer(selectedSwap.receiver, selectedSwap.amountOut);
 

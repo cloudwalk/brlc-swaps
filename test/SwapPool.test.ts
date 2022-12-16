@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { Contract, ContractFactory } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { fail } from "assert";
 
 interface ISwap {
   tokenIn: Contract;
@@ -24,7 +25,7 @@ async function setUpFixture(func: any) {
 
 describe("Contract 'SwapPool'", () => {
   const PENDING = 0;
-  const EXECUTED = 1;
+  const FINALIZED = 1;
   const DECLINED = 2;
 
   const TEST_AMOUNT_IN = 200;
@@ -47,7 +48,7 @@ describe("Contract 'SwapPool'", () => {
   const REVERT_ERROR_IF_ZERO_ADDRESS_SUPPORTED_TOKEN = "ZeroTokenAddress";
   const REVERT_ERROR_IF_UNVERIFIED_SENDER = "UnverifiedSender";
   const REVERT_ERROR_IF_SWAP_DECLINED = "SwapAlreadyDeclined";
-  const REVERT_ERROR_IF_SWAP_EXECUTED = "SwapAlreadyExecuted";
+  const REVERT_ERROR_IF_SWAP_EXECUTED = "SwapAlreadyFinalized";
   const REVERT_ERROR_IF_SWAP_NOT_EXIST = "SwapNotExist";
   const REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED =
     "Initializable: contract is already initialized";
@@ -362,7 +363,7 @@ describe("Contract 'SwapPool'", () => {
       await pool.finalizeSwap(lastId);
 
       const createdSwap = await pool.getSwap(lastId);
-      await expect(createdSwap[6]).to.eq(EXECUTED);
+      await expect(createdSwap[6]).to.eq(FINALIZED);
       await expect(await tokenMock1.balanceOf(pool.address)).to.eq(
         TEST_AMOUNT_IN
       );
@@ -533,7 +534,7 @@ describe("Contract 'SwapPool'", () => {
 
       const createdSwap = await pool.getSwap(lastId);
 
-      expect(createdSwap[6]).to.eq(EXECUTED);
+      expect(createdSwap[6]).to.eq(FINALIZED);
       expect(await tokenMock2.balanceOf(user.address)).to.eq(TEST_AMOUNT_OUT);
     });
   });
