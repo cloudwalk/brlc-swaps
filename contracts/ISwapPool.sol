@@ -6,21 +6,22 @@ pragma solidity 0.8.16;
  * @author CloudWalk Inc.
  */
 interface ISwapPoolTypes {
-    /// @dev enum for describing current status of a swap
+    /// @dev The enumeration of swap statuses.
     enum SwapStatus {
-        Pending,
-        Finalized,
-        Declined
+        Pending,    // 0 The status just after swap creation.
+        Finalized,  // 1 The status of a successfully finalized swap.
+        Declined    // 2 The status of a declined swap.
     }
 
+    /// @dev The structure with data of a single swap operation.
     struct Swap {
-        address tokenIn;    // token to buy
-        address tokenOut;   // token to sell
-        uint256 amountIn;   // amount to receive
-        uint256 amountOut;  // amount to send
-        address sender;     // address that will send tokens
-        address receiver;   // address that will receive tokens
-        SwapStatus status;  // current status of the swap
+        address tokenIn;    // The token to buy by the contract.
+        address tokenOut;   // The token to sell by the contract.
+        uint256 amountIn;   // The amount to receive by the contract.
+        uint256 amountOut;  // The amount to send from the contract.
+        address sender;     // The address that sends tokens to the contract.
+        address receiver;   // The address that receives tokens from the contract.
+        SwapStatus status;  // The current status of the swap.
     }
 }
 
@@ -31,57 +32,60 @@ interface ISwapPoolTypes {
  */
 interface ISwapPool is ISwapPoolTypes {
     /**
-     * @dev Emitted when new swap was created.
+     * @dev Emitted when a new swap was created.
      * @param id The id of the created swap.
      */
     event SwapCreated(uint256 id);
 
-    /**
-     * @dev Emitted when swap was finalized.
+   /**
+     * @dev Emitted when a swap was finalized.
      * @param id The id of the finalized swap.
      */
     event SwapFinalized(uint256 id);
 
     /**
-     * @dev Emitted when swap was declined.
+     * @dev Emitted when a swap was declined.
      * @param id The id of the declined swap.
      */
     event SwapDeclined(uint256 id);
 
     /**
-     * @dev Emitted when tokens were witdrawed from a contract.
-     * @param receiver The address that received tokens.
-     * @param token The address of a withdrawed token.
-     * @param amount The amount of tokens that were witdrawed.
+     * @dev Emitted when tokens are withdrawn from the contract.
+     * @param receiver The address that receives tokens.
+     * @param token The address of the token contract.
+     * @param amount The amount of tokens that is withdrawn.
      */
     event TokensWithdrawal(address receiver, address token, uint amount);
 
     /**
-     * @dev Emitted when token to buy status was updated.
+     * @dev Emitted when the status of a token to buy is updated.
      * @param token The address of the configured token.
-     * @param status The new buy status of a token.
+     * @param status The new buy status of the token.
      */
     event TokenInConfigured(address token, bool status);
 
     /**
-     * @dev Emitted when token to sell status was updated.
+     * @dev Emitted when the status of token to sell is updated.
      * @param token The address of the configured token.
      * @param status The new sell status of a token.
      */
     event TokenOutConfigured(address token, bool status);
 
     /**
-     * @dev Creates new swap.
+     * @dev Creates a new swap.
+     *
+     * This function can be called by a limited number of accounts that are allowed to execute swap pool operations.
      *
      * Emits a {SwapCreated} event.
      *
-     * @param tokenIn The address a token to be bought.
-     * @param tokenOut The address of a token to be sold.
-     * @param amountIn The amount of tokens to be received.
-     * @param amountOut The amount of tokens to be sent.
-     * @param sender The address of the account to send sign the message and send tokens.
-     * @param receiver The address of the account that will tokens.
-     * @param sig The signature of the message, signed by sender.
+     * @param tokenIn The address a token to buy by the contract.
+     * @param tokenOut The address of a token to sell by the contract.
+     * @param amountIn The amount of tokens to receive by the contract.
+     * @param amountOut The amount of tokens to send by the contract.
+     * @param sender The address of the account that sends tokens and signs the swap message.
+     * @param receiver The address of the account that will receive tokens.
+     * @param sig The signature of the swap message, signed by sender.
+     *        The swap message contains all the params above and the id of the created swap, except the sender.
      */
     function createSwap(
         address tokenIn,
@@ -94,18 +98,19 @@ interface ISwapPool is ISwapPoolTypes {
     ) external;
 
     /**
-     * @dev Creates and finalizes new swap.
+     * @dev Creates and finalizes a new swap.
      *
      * Emits a {SwapCreated} event.
      * Emits a {SwapFinalized} event.
      *
-     * @param tokenIn The address a token to be bought.
-     * @param tokenOut The address of a token to be sold.
-     * @param amountIn The amount of tokens to be received.
-     * @param amountOut The amount of tokens to be sent.
-     * @param sender The address of the account to send sign the message and send tokens.
-     * @param receiver The address of the account that will tokens.
-     * @param sig The signature of the message, signed by sender.
+     * @param tokenIn The address a token to buy by the contract.
+     * @param tokenOut The address of a token to sell by the contract.
+     * @param amountIn The amount of tokens to receive by the contract.
+     * @param amountOut The amount of tokens to send by the contract.
+     * @param sender The address of the account that sends tokens and signs the swap message.
+     * @param receiver The address of the account that will receive tokens.
+     * @param sig The signature of the swap message, signed by sender.
+     *        The swap message contains all the params above and the id of the created swap, except the sender.
      */
     function createAndFinalizeSwap(
         address tokenIn,
@@ -118,7 +123,7 @@ interface ISwapPool is ISwapPoolTypes {
     ) external;
 
     /**
-     * @dev Finalizes the selected swap.
+     * @dev Finalizes a selected swap.
      *
      * Emits a {SwapFinalized} event.
      *
@@ -127,7 +132,7 @@ interface ISwapPool is ISwapPoolTypes {
     function finalizeSwap(uint256 id) external;
 
     /**
-     * @dev Declines the selected swap.
+     * @dev Declines a selected swap.
      *
      * Emits a {SwapDeclined} event.
      *
@@ -136,44 +141,44 @@ interface ISwapPool is ISwapPoolTypes {
     function declineSwap(uint256 id) external;
 
     /**
-     * @dev Changes the buy status of the token.
+     * @dev Configures the status of a token to buy.
      *
      * Emits a {TokenInConfigured} event.
      *
-     * @param token The address of the token to change buy status of.
+     * @param token The address of the token to configure.
      * @param supported The new status of the token.
      */
     function configureTokenIn(address token, bool supported) external;
 
     /**
-     * @dev Changes the sell status of the token.
+     * @dev Configures the status of a token to sell.
      *
      * Emits a {TokenOutConfigured} event.
      *
-     * @param token The address of the token to change sell status of.
+     * @param token The address of the token to configure.
      * @param supported The new status of the token.
      */
     function configureTokenOut(address token, bool supported) external;
 
-    /**
+   /**
      * @dev Withdraws tokens from the contract.
      *
      * Emits a {TokensWithdrawal} event.
      *
-     * @param token The address of the token to be withdrawed.
-     * @param amount The amount of tokens to be withdrawed.
+     * @param token The address of the token to be withdrawn.
+     * @param amount The amount of tokens to be withdrawn.
      * @param receiver The receiver of the tokens.
      */
     function withdrawTokens(address token, uint256 amount, address receiver) external;
 
     /**
-     * @dev Returns selected swap.
-     * @param id The id of a swap to return.
+     * @dev Returns the swap for a given id.
+     * @param id The id of the swap to return.
      */
     function getSwap(uint256 id) external returns (Swap memory);
 
     /**
-     * @dev Returns an array of swaps.
+     * @dev Returns an array of swaps for a range of ids.
      * @param id The id of the first swap in the range to return.
      * @param limit The maximum number of swaps in the range to return.
      */
@@ -185,14 +190,14 @@ interface ISwapPool is ISwapPoolTypes {
     function swapsCount() external returns (uint256 result);
 
     /**
-     * @dev Returns the buy status of the selected token.
-     * @param token The address of a selected token
+     * @dev Returns the status of a token to buy.
+     * @param token The address of the token to return the status.
      */
     function isTokenInSupported(address token) external returns (bool);
 
     /**
-     * @dev Returns the sell status of the selected token.
-     * @param token The address of a selected token
+     * @dev Returns the status of a token to sell.
+     * @param token The address of the token to return the status.
      */
     function isTokenOutSupported(address token) external returns (bool);
 }

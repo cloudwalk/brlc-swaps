@@ -37,22 +37,22 @@ contract SwapPool is
     /// @dev Hash of the owner role.
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 
-    /// @dev Token is not supported by the contract.
+    /// @dev The token is not supported by the contract.
     error TokenNotSupported();
 
-    /// @dev Swap with selected id is already declined.
+    /// @dev A swap with the provided id is already declined.
     error SwapAlreadyDeclined();
 
-    /// @dev Swap with selected id is already finalized.
+    /// @dev A swap with the provided id is already finalized.
     error SwapAlreadyFinalized();
 
-    /// @dev Swap with selected id does not exist.
+    /// @dev A swap with the provided id does not exist.
     error SwapNotExist();
 
-    /// @dev Zero address was passed as a parameter.
+    /// @dev The zero address was passed as a parameter.
     error ZeroTokenAddress();
 
-    /// @dev Selected token already has passed status.
+    /// @dev The status of the token has already been configured.
     error TokenAlreadyConfigured();
 
     /**
@@ -106,12 +106,12 @@ contract SwapPool is
      *
      * Requirements:
      *
-     * - The caller must have MANAGER_ROLE.
-     * - The contract should not be paused.
-     * - The sender should not be blacklisted.
-     * - The receiver should not be blacklisted.
-     * - The sender must be a message signer.
-     * - Tokens should be supported.
+     * - The caller must have the {MANAGER_ROLE} role.
+     * - The contract must not be paused.
+     * - The sender must not be blacklisted.
+     * - The receiver must not be blacklisted.
+     * - The sender must be the signer of the swap message.
+     * - Tokens to buy and sell must be supported.
      */
     function createSwap(
         address tokenIn,
@@ -131,12 +131,12 @@ contract SwapPool is
      *
      * Requirements:
      *
-     * - The caller must have MANAGER_ROLE.
-     * - The contract should not be paused.
-     * - The sender should not be blacklisted.
-     * - The receiver should not be blacklisted.
-     * - The sender must be a message signer.
-     * - Tokens should be supported.
+     * - The caller must have the {MANAGER_ROLE} role.
+     * - The contract must not be paused.
+     * - The sender must not be blacklisted.
+     * - The receiver must not be blacklisted.
+     * - The sender must be the signer of the swap message.
+     * - Tokens to buy and sell must be supported.
      */
     function createAndFinalizeSwap(
         address tokenIn,
@@ -157,11 +157,11 @@ contract SwapPool is
      *
      * Requirements:
      *
-     * - The caller must have MANAGER_ROLE.
-     * - The contract should not be paused.
-     * - The swap with selected id should exist.
-     * - The swap with selected id should not be finalized.
-     * - The swap with selected id should not be declined.
+     * - The caller must have the {MANAGER_ROLE} role.
+     * - The contract must not be paused.
+     * - The swap with the provided id must exist.
+     * - The swap with the provided id must not be executed.
+     * - The swap with the provided id must not be declined.
      */
     function declineSwap(uint256 id) external onlyRole(MANAGER_ROLE) whenNotPaused {
         if (id >= _swaps.length) {
@@ -189,11 +189,11 @@ contract SwapPool is
      *
      * Requirements:
      *
-     * - The caller must have MANAGER_ROLE.
-     * - The contract should not be paused.
-     * - The swap with selected id should exist.
-     * - The swap with selected id should not be finalized.
-     * - The swap with selected id should not be declined.
+     * - The caller must have the {MANAGER_ROLE} role.
+     * - The contract must not be paused.
+     * - The swap with the provided id must exist.
+     * - The swap with the provided id must not be executed.
+     * - The swap with the provided id must not be declined.
      */
     function finalizeSwap(uint256 id) external onlyRole(MANAGER_ROLE) whenNotPaused {
         _finalizeSwap(id);
@@ -204,9 +204,9 @@ contract SwapPool is
      *
      * Requirements:
      *
-     * - The caller must have ADMIN_ROLE.
-     * - The selected token should not be zero address.
-     * - The selected token should not already have {status}.
+     * - The caller must have the {ADMIN_ROLE} role.
+     * - The token address must not be zero.
+     * - The new status of the token must defer from the current one.
      */
     function configureTokenIn(address token, bool supported) external onlyRole(ADMIN_ROLE) whenNotPaused {
         if (token == address(0)) {
@@ -224,9 +224,9 @@ contract SwapPool is
      *
      * Requirements:
      *
-     * - The caller must have ADMIN_ROLE.
-     * - The selected token should not be zero address.
-     * - The selected token should not already have {status}.
+     * - The caller must have the {ADMIN_ROLE} role.
+     * - The token address must not be zero.
+     * - The new status of the token must defer from the current one.
      */
     function configureTokenOut(address token, bool supported) external onlyRole(ADMIN_ROLE) whenNotPaused {
         if (token == address(0)) {
@@ -244,7 +244,7 @@ contract SwapPool is
      *
      * Requirements:
      *
-     * - The caller must have the ADMIN_ROLE
+     * - The caller must have the {ADMIN_ROLE} role.
      */
     function withdrawTokens(
         address token,
