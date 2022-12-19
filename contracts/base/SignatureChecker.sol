@@ -2,8 +2,14 @@
 pragma solidity 0.8.16;
 
 abstract contract SignatureChecker {
+    /// @dev Message sender is not a signer.
     error UnverifiedSender();
 
+    /**
+     * @dev Splits given signature to r, s and v in assembly.
+     * @param sig Signature to split.
+     * @return uint8, bytes32, bytes32 The splitted bytes from the signature.
+     */
     function _splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32) {
         require(sig.length == 65);
 
@@ -22,6 +28,12 @@ abstract contract SignatureChecker {
         return (v, r, s);
     }
 
+    /**
+     * @dev Returns the address that signed a {message} with signature {sig}.
+     * @param message The hash of a message to check the signer of.
+     * @param sig The signature used to sign a {message}.
+     * @return Address that signed a {message}.
+     */
     function _recoverSigner(bytes32 message, bytes memory sig) internal pure returns (address) {
         if (sig.length != 65) {
             return (address(0));
