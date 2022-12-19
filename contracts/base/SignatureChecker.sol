@@ -1,6 +1,11 @@
 //SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.16;
 
+/**
+ * @title SignatureChecker contract
+ * @author CloudWalk Inc.
+ */
 abstract contract SignatureChecker {
     /// @dev Message sender is not a signer.
     error UnverifiedSender();
@@ -8,7 +13,7 @@ abstract contract SignatureChecker {
     /**
      * @dev Splits given signature to r, s and v in assembly.
      * @param sig Signature to split.
-     * @return uint8, bytes32, bytes32 The splitted bytes from the signature.
+     * @return uint8, bytes32, bytes32 The split bytes from the signature.
      */
     function _splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32) {
         require(sig.length == 65);

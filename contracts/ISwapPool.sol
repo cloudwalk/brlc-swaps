@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.16;
 
 /**
@@ -28,7 +29,7 @@ interface ISwapPoolTypes {
 /**
  * @title SwapPool interface
  * @author CloudWalk Inc.
- * @dev The interface of the SwapPool contrats.
+ * @dev The interface of the SwapPool contract.
  */
 interface ISwapPool is ISwapPoolTypes {
     /**

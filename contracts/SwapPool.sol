@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.16;
 
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -14,6 +15,10 @@ import { StoragePlaceholder200 } from "./base/StoragePlaceholder.sol";
 import { SwapPoolStorage } from "./SwapPoolStorage.sol";
 import { ISwapPool } from "./ISwapPool.sol";
 
+/**
+ * @title SwapPool contract
+ * @author CloudWalk Inc.
+ */
 contract SwapPool is
     Initializable,
     AccessControlUpgradeable,
@@ -25,7 +30,7 @@ contract SwapPool is
     SwapPoolStorage,
     ISwapPool
 {
-    /// @dev Used to prevent unseccessfull token transfers.
+    /// @dev Used to prevent unsuccessful token transfers.
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     /// @dev Hash of the manager role.
