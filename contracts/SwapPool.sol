@@ -33,13 +33,13 @@ contract SwapPool is
     /// @dev Used to prevent unsuccessful token transfers.
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
-    /// @dev Hash of the manager role.
+    /// @dev The hash of the manager role.
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
-    /// @dev Hash of the admin role.
+    /// @dev The hash of the admin role.
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    /// @dev Hash of the owner role.
+    /// @dev The hash of the owner role.
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 
     /// @dev The token is not supported by the contract.
