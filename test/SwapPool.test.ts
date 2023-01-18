@@ -3,16 +3,17 @@ import { expect } from "chai";
 import { Contract, ContractFactory } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { fail } from "assert";
+import { proveTx } from "../test-utils/eth";
+
 
 interface ISwap {
   tokenIn: Contract;
   tokenOut: Contract;
-  amountIn: Number;
-  amountOut: Number;
+  amountIn: number;
+  amountOut: number;
   receiver: SignerWithAddress;
-  id: Number;
-  signer: SignerWithAddress;
+  id: number;
+  sender: SignerWithAddress;
 }
 
 async function setUpFixture(func: any) {
@@ -24,9 +25,11 @@ async function setUpFixture(func: any) {
 }
 
 describe("Contract 'SwapPool'", () => {
-  const PENDING = 0;
-  const FINALIZED = 1;
-  const DECLINED = 2;
+  enum SwapStatus {
+    Pending = 0,
+    Finalized = 1,
+    Declined = 2,
+  }
 
   const TEST_AMOUNT_IN = 200;
   const TEST_AMOUNT_OUT = 100;
@@ -50,15 +53,13 @@ describe("Contract 'SwapPool'", () => {
   const REVERT_ERROR_IF_SWAP_DECLINED = "SwapAlreadyDeclined";
   const REVERT_ERROR_IF_SWAP_EXECUTED = "SwapAlreadyFinalized";
   const REVERT_ERROR_IF_SWAP_NOT_EXIST = "SwapNotExist";
+  const REVERT_ERROR_IF_TOKEN_CONFIGURED = "TokenAlreadyConfigured"
   const REVERT_MESSAGE_IF_CONTRACT_IS_ALREADY_INITIALIZED =
     "Initializable: contract is already initialized";
 
-  const MANAGER_ROLE_HASH =
-    "0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08";
-  const OWNER_ROLE_HASH =
-    "0xb19546dff01e856fb3f010c267a7b1c60363cf8a4664e21cc89c26224620214e";
-  const ADMIN_ROLE_HASH =
-    "0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775";
+  const MANAGER_ROLE_HASH = ethers.utils.id("MANAGER_ROLE");
+  const OWNER_ROLE_HASH = ethers.utils.id("OWNER_ROLE");
+  const ADMIN_ROLE_HASH = ethers.utils.id("ADMIN_ROLE");
 
   let token1Factory: ContractFactory;
   let swapPoolFactory: ContractFactory;
@@ -97,14 +98,8 @@ describe("Contract 'SwapPool'", () => {
     const pool = await upgrades.deployProxy(swapPoolFactory, []);
     await pool.deployed();
 
-    await tokenMock1.increaseAllowance(
-      pool.address,
-      ethers.utils.parseEther("1")
-    );
-    await tokenMock2.increaseAllowance(
-      pool.address,
-      ethers.utils.parseEther("1")
-    );
+    await proveTx(tokenMock1.approve(pool.address, ethers.constants.MaxUint256));
+    await proveTx(tokenMock2.approve(pool.address, ethers.constants.MaxUint256));
 
     await pool.grantRole(MANAGER_ROLE_HASH, deployer.address);
     await pool.grantRole(ADMIN_ROLE_HASH, deployer.address);
@@ -122,11 +117,11 @@ describe("Contract 'SwapPool'", () => {
   async function createSignature(
     tokenIn: Contract,
     tokenOut: Contract,
-    amountIn: Number,
-    amountOut: Number,
+    amountIn: number,
+    amountOut: number,
     receiver: SignerWithAddress,
-    id: Number,
-    signer: SignerWithAddress
+    id: number,
+    sender: SignerWithAddress
   ) {
     const swapData: ISwap = {
       tokenIn: tokenIn,
@@ -135,7 +130,7 @@ describe("Contract 'SwapPool'", () => {
       amountOut: amountOut,
       receiver: receiver,
       id: id,
-      signer: signer,
+      sender: sender,
     };
     const messageData = ethers.utils.defaultAbiCoder.encode(
       ["address", "address", "uint", "uint", "address", "uint"],
@@ -150,7 +145,7 @@ describe("Contract 'SwapPool'", () => {
     );
     const messageHash = ethers.utils.keccak256(messageData);
     const binaryMessageHash = ethers.utils.arrayify(messageHash);
-    const signature = await signer.signMessage(binaryMessageHash);
+    const signature = await sender.signMessage(binaryMessageHash);
 
     return {
       signature,
@@ -212,7 +207,7 @@ describe("Contract 'SwapPool'", () => {
       await expect(createdSwap[3]).to.eq(TEST_AMOUNT_OUT);
       await expect(createdSwap[4]).to.eq(deployer.address);
       await expect(createdSwap[5]).to.eq(deployer.address);
-      await expect(createdSwap[6]).to.eq(PENDING);
+      await expect(createdSwap[6]).to.eq(SwapStatus.Pending);
     });
 
     it("Emits a 'SwapCreated()' event", async () => {
@@ -305,7 +300,7 @@ describe("Contract 'SwapPool'", () => {
     });
 
     it("Is reverted if token is not supported", async () => {
-      const { pool, tokenMock1, tokenMock2 } = await setUpFixture(
+      const { pool, tokenMock2 } = await setUpFixture(
         deployAllContracts
       );
 
@@ -363,7 +358,7 @@ describe("Contract 'SwapPool'", () => {
       await pool.finalizeSwap(lastId);
 
       const createdSwap = await pool.getSwap(lastId);
-      await expect(createdSwap[6]).to.eq(FINALIZED);
+      await expect(createdSwap[6]).to.eq(SwapStatus.Finalized);
       await expect(await tokenMock1.balanceOf(pool.address)).to.eq(
         TEST_AMOUNT_IN
       );
@@ -534,7 +529,7 @@ describe("Contract 'SwapPool'", () => {
 
       const createdSwap = await pool.getSwap(lastId);
 
-      expect(createdSwap[6]).to.eq(FINALIZED);
+      expect(createdSwap[6]).to.eq(SwapStatus.Finalized);
       expect(await tokenMock2.balanceOf(user.address)).to.eq(TEST_AMOUNT_OUT);
     });
   });
@@ -568,7 +563,7 @@ describe("Contract 'SwapPool'", () => {
       await pool.declineSwap(lastId);
       const createdSwap = await pool.getSwap(lastId);
 
-      await expect(createdSwap[6]).to.eq(DECLINED);
+      await expect(createdSwap[6]).to.eq(SwapStatus.Declined);
     });
 
     it("Emits a 'SwapFinalized()' event", async () => {
@@ -739,6 +734,17 @@ describe("Contract 'SwapPool'", () => {
       );
     });
 
+    it("Is reverted if token is already configured", async () => {
+      const { pool, tokenMock1 } = await setUpFixture(deployAllContracts);
+
+      await expect(
+        pool.configureTokenIn(tokenMock1.address, true)
+      ).to.be.revertedWithCustomError(
+        pool,
+        REVERT_ERROR_IF_TOKEN_CONFIGURED
+      );
+    })
+
     it("Is reverted if caller is not a manager", async () => {
       const { pool, tokenMock1 } = await setUpFixture(deployAllContracts);
 
@@ -782,6 +788,17 @@ describe("Contract 'SwapPool'", () => {
         REVERT_ERROR_IF_ZERO_ADDRESS_SUPPORTED_TOKEN
       );
     });
+
+    it("Is reverted if token is already configured", async () => {
+      const { pool, tokenMock2 } = await setUpFixture(deployAllContracts);
+
+      await expect(
+        pool.configureTokenOut(tokenMock2.address, true)
+      ).to.be.revertedWithCustomError(
+        pool,
+        REVERT_ERROR_IF_TOKEN_CONFIGURED
+      );
+    })
 
     it("Is reverted if caller is not a manager", async () => {
       const { pool, tokenMock1 } = await setUpFixture(deployAllContracts);
@@ -868,7 +885,7 @@ describe("Contract 'SwapPool'", () => {
       await expect(createdSwap[3]).to.eq(TEST_AMOUNT_OUT);
       await expect(createdSwap[4]).to.eq(deployer.address);
       await expect(createdSwap[5]).to.eq(deployer.address);
-      await expect(createdSwap[6]).to.eq(PENDING);
+      await expect(createdSwap[6]).to.eq(SwapStatus.Pending);
     });
 
     it("function 'getSwaps()'", async () => {
@@ -907,7 +924,7 @@ describe("Contract 'SwapPool'", () => {
       await expect(selectedSwap[3]).to.eq(TEST_AMOUNT_OUT);
       await expect(selectedSwap[4]).to.eq(deployer.address);
       await expect(selectedSwap[5]).to.eq(deployer.address);
-      await expect(selectedSwap[6]).to.eq(PENDING);
+      await expect(selectedSwap[6]).to.eq(SwapStatus.Pending);
 
       swaps = await pool.getSwaps(6, 0);
       expect(swaps.length == 0);
@@ -921,7 +938,7 @@ describe("Contract 'SwapPool'", () => {
       await expect(selectedSwap[3]).to.eq(TEST_AMOUNT_OUT);
       await expect(selectedSwap[4]).to.eq(deployer.address);
       await expect(selectedSwap[5]).to.eq(deployer.address);
-      await expect(selectedSwap[6]).to.eq(PENDING);
+      await expect(selectedSwap[6]).to.eq(SwapStatus.Pending);
     });
 
     it("function 'swapsCount()'", async () => {
