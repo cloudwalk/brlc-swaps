@@ -61,6 +61,9 @@ contract SwapPool is
     /// @dev The status of the token has already been configured.
     error TokenAlreadyConfigured();
 
+    /// @dev The provided signature of the swap is wrong and doesn't match the swap sender
+    error WrongSwapSignature();
+
     /**
      * @dev Constructor that prohibits the initialization of the implementation of the upgradable contract.
      *
@@ -390,7 +393,7 @@ contract SwapPool is
         bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageData));
 
         if (_recoverSigner(messageHash, sig) != sender) {
-            revert UnverifiedSender();
+            revert WrongSwapSignature();
         }
     }
 }

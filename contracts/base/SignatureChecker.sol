@@ -7,9 +7,6 @@ pragma solidity 0.8.16;
  * @author CloudWalk Inc.
  */
 abstract contract SignatureChecker {
-    /// @dev Message sender is not a signer.
-    error UnverifiedSender();
-
     /**
      * @dev Splits given signature to r, s and v in assembly.
      * @param sig Signature to split.
