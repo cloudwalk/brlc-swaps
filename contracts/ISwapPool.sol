@@ -9,9 +9,10 @@ pragma solidity 0.8.16;
 interface ISwapPoolTypes {
     /// @dev The enumeration of swap statuses.
     enum SwapStatus {
-        Pending,    // 0 The status just after swap creation.
-        Finalized,  // 1 The status of a successfully finalized swap.
-        Declined    // 2 The status of a declined swap.
+        Nonexistent, // 0 The relocation does not exist.
+        Pending,     // 1 The status just after swap creation.
+        Finalized,   // 2 The status of a successfully finalized swap.
+        Declined     // 3 The status of a declined swap.
     }
 
     /// @dev The structure with data of a single swap operation.
