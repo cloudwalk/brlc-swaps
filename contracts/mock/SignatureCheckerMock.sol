@@ -9,7 +9,7 @@ import { SignatureChecker } from "../base/SignatureChecker.sol";
  * @author CloudWalk Inc.
  * @dev An implementation of the {SignatureChecker} base contract for test purposes.
  */
-contract SignatureCheckerMock is SignatureChecker  {
+contract SignatureCheckerMock is SignatureChecker {
     /// @dev Calls the appropriate function of the base contract
     function splitSignature(bytes memory sig) external pure returns (uint8, bytes32, bytes32) {
         return _splitSignature(sig);

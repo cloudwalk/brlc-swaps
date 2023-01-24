@@ -39,7 +39,7 @@ interface ISwapPool is ISwapPoolTypes {
      */
     event SwapCreated(uint256 id);
 
-   /**
+    /**
      * @dev Emitted when a swap was finalized.
      * @param id The id of the finalized swap.
      */
@@ -162,7 +162,7 @@ interface ISwapPool is ISwapPoolTypes {
      */
     function configureTokenOut(address token, bool supported) external;
 
-   /**
+    /**
      * @dev Withdraws tokens from the contract.
      *
      * Emits a {TokensWithdrawal} event.
