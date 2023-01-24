@@ -269,6 +269,9 @@ contract SwapPool is
      * @dev See {ISwapPool-getSwap}.
      */
     function getSwap(uint256 id) external view returns (Swap memory) {
+        if (id >= _swaps.length) {
+            revert SwapNotExist();
+        }
         return _swaps[id];
     }
 
