@@ -43,6 +43,8 @@ contract SwapPool is
     /// @dev The hash of the owner role.
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 
+    // -------------------- Errors -----------------------------------
+
     /// @dev The token is not supported by the contract.
     error TokenNotSupported();
 
@@ -63,6 +65,8 @@ contract SwapPool is
 
     /// @dev The provided signature of the swap is wrong and doesn't match the swap sender
     error WrongSwapSignature();
+
+    // -------------------- Functions --------------------------------
 
     /**
      * @dev Constructor that prohibits the initialization of the implementation of the upgradable contract.
