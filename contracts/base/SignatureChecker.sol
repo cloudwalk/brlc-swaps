@@ -59,6 +59,8 @@ abstract contract SignatureChecker {
             return (address(0));
         }
 
+        message = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", message));
+
         return ecrecover(message, v, r, s);
     }
 }

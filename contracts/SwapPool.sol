@@ -393,8 +393,7 @@ contract SwapPool is
         bytes calldata sig,
         uint id
     ) internal pure {
-        bytes32 messageData = keccak256(abi.encode(tokenIn, tokenOut, amountIn, amountOut, receiver, id));
-        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageData));
+        bytes32 messageHash = keccak256(abi.encode(tokenIn, tokenOut, amountIn, amountOut, receiver, id));
 
         if (_recoverSigner(messageHash, sig) != sender) {
             revert WrongSwapSignature();

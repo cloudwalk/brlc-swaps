@@ -17,7 +17,6 @@ contract SignatureCheckerMock is SignatureChecker {
 
     /// @dev Calls the appropriate function of the base contract
     function recoverSigner(bytes32 message, bytes memory sig) external pure returns (address) {
-        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", message));
-        return _recoverSigner(messageHash, sig);
+        return _recoverSigner(message, sig);
     }
 }
