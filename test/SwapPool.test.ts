@@ -197,10 +197,10 @@ describe("Contract 'SwapPool'", async () => {
   async function deployAndConfigurePool(): Promise<{ pool: Contract }> {
     const { pool } = await deployPool();
 
-    await pool.grantRole(ADMIN_ROLE_HASH, admin.address);
-    await pool.grantRole(BLACKLISTER_ROLE_HASH, deployer.address);
-    await pool.grantRole(MANAGER_ROLE_HASH, manager.address);
-    await pool.grantRole(PAUSER_ROLE_HASH, deployer.address);
+    await proveTx(pool.grantRole(ADMIN_ROLE_HASH, admin.address));
+    await proveTx(pool.grantRole(BLACKLISTER_ROLE_HASH, deployer.address));
+    await proveTx(pool.grantRole(MANAGER_ROLE_HASH, manager.address));
+    await proveTx(pool.grantRole(PAUSER_ROLE_HASH, deployer.address));
 
     return { pool };
   }
@@ -894,9 +894,12 @@ describe("Contract 'SwapPool'", async () => {
   describe("Function 'getSwap()'", async () => {
     it("Is reverted if a swap with the provided id does not exist", async () => {
       const { pool, defaultSwap } = await setUpFixture(deployAndConfigureAllContracts);
-      await expect(
-        pool.getSwap(defaultSwap.id)
-      ).to.revertedWithCustomError(pool, REVERT_ERROR_IF_SWAP_NOT_EXIST);
+      const call: Promise<any> = pool.getSwap(defaultSwap.id);
+      if (network.name === "hardhat") {
+        await expect(call).to.revertedWithCustomError(pool, REVERT_ERROR_IF_SWAP_NOT_EXIST);
+      } else {
+        await expect(call).to.reverted;
+      }
     });
   });
 
