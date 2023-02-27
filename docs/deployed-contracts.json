@@ -1,0 +1,12 @@
+[
+  {
+    "name": "SwapPool",
+    "chainId": 2009,
+    "address": "0xF184797143435378e4c9BE90f6e3511A1365303f"
+  },
+  {
+    "name": "SwapPool",
+    "chainId": 2008,
+    "address": "0xc1AD5668b83e315a59D7331555DfEfc967228aCb"
+  }
+]
