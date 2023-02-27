@@ -10,7 +10,7 @@ import { ISwapPoolTypes } from "./ISwapPool.sol";
  */
 abstract contract SwapPoolStorageV1 is ISwapPoolTypes {
     /// @dev The id of each created signature.
-    uint256 id;
+    uint256 internal _id;
 
     /// @dev The array of created swaps.
     Swap[] internal _swaps;

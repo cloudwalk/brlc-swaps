@@ -139,7 +139,7 @@ contract SwapPool is
         address receiver,
         bytes calldata sig
     ) external onlyRole(MANAGER_ROLE) notBlacklisted(sender) notBlacklisted(receiver) whenNotPaused {
-        _verifySignature(tokenIn, tokenOut, amountIn, amountOut, sender, receiver, sig, id);
+        _verifySignature(tokenIn, tokenOut, amountIn, amountOut, sender, receiver, sig, _id);
         _createSwap(tokenIn, tokenOut, amountIn, amountOut, sender, receiver);
     }
 
@@ -164,9 +164,8 @@ contract SwapPool is
         address receiver,
         bytes calldata sig
     ) external onlyRole(MANAGER_ROLE) notBlacklisted(sender) notBlacklisted(receiver) whenNotPaused {
-        _verifySignature(tokenIn, tokenOut, amountIn, amountOut, sender, receiver, sig, id);
-        uint256 newSwapId = _createSwap(tokenIn, tokenOut, amountIn, amountOut, sender, receiver);
-        _finalizeSwap(newSwapId);
+        _verifySignature(tokenIn, tokenOut, amountIn, amountOut, sender, receiver, sig, _id);
+        _finalizeSwap(_createSwap(tokenIn, tokenOut, amountIn, amountOut, sender, receiver));
     }
 
     /**
@@ -198,6 +197,7 @@ contract SwapPool is
         selectedSwap.status = SwapStatus.Declined;
 
         IERC20Upgradeable(selectedSwap.tokenIn).safeTransfer(selectedSwap.sender, selectedSwap.amountIn);
+
         emit SwapDeclined(id);
     }
 
@@ -232,7 +232,9 @@ contract SwapPool is
         if (_supportedIn[token] == supported) {
             revert TokenAlreadyConfigured();
         }
+
         _supportedIn[token] = supported;
+
         emit TokenInConfigured(token, supported);
     }
 
@@ -252,7 +254,9 @@ contract SwapPool is
         if (_supportedOut[token] == supported) {
             revert TokenAlreadyConfigured();
         }
+
         _supportedOut[token] = supported;
+
         emit TokenOutConfigured(token, supported);
     }
 
@@ -352,10 +356,12 @@ contract SwapPool is
 
         IERC20Upgradeable(tokenIn).safeTransferFrom(sender, address(this), amountIn);
 
-        uint256 currentId = id;
-        emit SwapCreated(id);
-        id = currentId + 1;
-        return currentId;
+        uint256 newSwapId = _id;
+        _id = newSwapId + 1;
+
+        emit SwapCreated(newSwapId);
+
+        return newSwapId;
     }
 
     /**
